@@ -2,6 +2,7 @@ package belajargolangdatabase
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"testing"
 	"time"
@@ -14,6 +15,21 @@ func TestExecSql(t *testing.T) {
 	ctx := context.Background()
 
 	script := "INSERT INTO customer(name, email, balance, rating, birth_date, married) VALUES('Doobi', 'doobi@email', 100000, 5.0, '1999-9-9', true)"
+	_, err := db.ExecContext(ctx, script)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Success insert new customer")
+}
+
+func TestExecSqlNull(t *testing.T) {
+	db := GetConnection()
+	defer db.Close()
+
+	ctx := context.Background()
+
+	script := "INSERT INTO customer(name, balance, rating, married) VALUES('Doobi', 100000, 5.0, true)"
 	_, err := db.ExecContext(ctx, script)
 	if err != nil {
 		panic(err)
@@ -85,10 +101,12 @@ func TestQuerySqlComplex(t *testing.T) {
 
 	for rows.Next() {
 		var id uint
-		var name, email string
+		var name string
+		var email sql.NullString
 		var balance int
 		var rating float64
-		var birth_date, created_at time.Time
+		var created_at time.Time
+		var birth_date sql.NullTime
 		var married bool
 
 		err = rows.Scan(&id, &name, &email, &balance, &rating, &birth_date, &married, &created_at)
@@ -98,9 +116,17 @@ func TestQuerySqlComplex(t *testing.T) {
 		fmt.Println("===================")
 		fmt.Println("id :", id)
 		fmt.Println("Name :", name)
-		fmt.Println("Email :", email)
+
+		if email.Valid {
+			fmt.Println("Email :", email.String)
+		}
+
 		fmt.Println("Balance :", balance)
-		fmt.Println("Date of Birth :", birth_date)
+
+		if birth_date.Valid {
+			fmt.Println("Date of Birth :", birth_date.Time)
+		}
+
 		fmt.Println("Married status :", married)
 		fmt.Println("Created at :", created_at)
 	}
