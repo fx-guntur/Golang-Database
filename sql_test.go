@@ -248,3 +248,83 @@ func TestPrepareStatement(t *testing.T) {
 		fmt.Println("Account id : ", id)
 	}
 }
+
+func TestTransaction(t *testing.T) {
+	db := GetConnection()
+	defer db.Close()
+
+	ctx := context.Background()
+	tx, err := db.Begin()
+	if err != nil {
+		panic(err)
+	}
+
+	script := "INSERT INTO customer(name, email, balance, rating, birth_date, married) VALUES(?, ?, ?, ?, ?, ?)"
+	// disini tidak mengguankan prepare statement tapi lebih baik jika menggunakannya
+	// lakukan transaksi
+	for i := 0; i < 10; i++ {
+		name := "Borti" + strconv.Itoa(i)
+		email := "borti" + strconv.Itoa(i) + "@email"
+		balance := 100000
+		rating := 5.0
+		dob := "1999-9-9"
+		married := true
+
+		result, err := tx.ExecContext(ctx, script, name, email, balance, rating, dob, married)
+		if err != nil {
+			panic(err)
+		}
+
+		id, err := result.LastInsertId()
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println("Account id : ", id)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func TestTransactionRollback(t *testing.T) {
+	db := GetConnection()
+	defer db.Close()
+
+	ctx := context.Background()
+	tx, err := db.Begin()
+	if err != nil {
+		panic(err)
+	}
+
+	script := "INSERT INTO customer(name, email, balance, rating, birth_date, married) VALUES(?, ?, ?, ?, ?, ?)"
+	// disini tidak mengguankan prepare statement tapi lebih baik jika menggunakannya
+	// lakukan transaksi
+	for i := 0; i < 10; i++ {
+		name := "Borti" + strconv.Itoa(i)
+		email := "borti" + strconv.Itoa(i) + "@email"
+		balance := 100000
+		rating := 5.0
+		dob := "1999-9-9"
+		married := true
+
+		result, err := tx.ExecContext(ctx, script, name, email, balance, rating, dob, married)
+		if err != nil {
+			panic(err)
+		}
+
+		id, err := result.LastInsertId()
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println("Account id : ", id)
+	}
+
+	err = tx.Rollback()
+	if err != nil {
+		panic(err)
+	}
+}
