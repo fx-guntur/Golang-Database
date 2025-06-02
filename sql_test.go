@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -132,4 +133,118 @@ func TestQuerySqlComplex(t *testing.T) {
 	}
 
 	defer rows.Close()
+}
+
+// gunakan parameter pada query sql agar aman dari sql injection
+
+func TestQuerySqlInjectionSafe(t *testing.T) {
+	db := GetConnection()
+	defer db.Close()
+
+	ctx := context.Background()
+
+	name := "Bobi'; #"
+	email := "bobi@email"
+
+	script := "SELECT name FROM customer WHERE name = ? AND email = ?"
+	rows, err := db.QueryContext(ctx, script, name, email)
+	if err != nil {
+		panic(err)
+	}
+
+	defer rows.Close()
+
+	if rows.Next() {
+		var name string
+		err = rows.Scan(&name)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("Data benar", name)
+	} else {
+		fmt.Println("Data salah")
+	}
+}
+
+func TestExecSqlParameter(t *testing.T) {
+	db := GetConnection()
+	defer db.Close()
+
+	ctx := context.Background()
+
+	name := "Surti"
+	email := "surti@email"
+	balance := 100000
+	rating := 5.0
+	dob := "1999-9-9"
+	married := true
+
+	script := "INSERT INTO customer(name, email, balance, rating, birth_date, married) VALUES(?, ?, ?, ?, ?, ?)"
+	_, err := db.ExecContext(ctx, script, name, email, balance, rating, dob, married)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Success insert new customer")
+}
+
+func TestAutoIncrement(t *testing.T) {
+	db := GetConnection()
+	defer db.Close()
+
+	ctx := context.Background()
+
+	name := "Burti"
+	email := "burti@email"
+	balance := 100000
+	rating := 5.0
+	dob := "1999-9-9"
+	married := true
+
+	script := "INSERT INTO customer(name, email, balance, rating, birth_date, married) VALUES(?, ?, ?, ?, ?, ?)"
+	result, err := db.ExecContext(ctx, script, name, email, balance, rating, dob, married)
+	if err != nil {
+		panic(err)
+	}
+
+	insertId, err := result.LastInsertId()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Last insert id : ", insertId)
+}
+
+func TestPrepareStatement(t *testing.T) {
+	db := GetConnection()
+	defer db.Close()
+
+	ctx := context.Background()
+	script := "INSERT INTO customer(name, email, balance, rating, birth_date, married) VALUES(?, ?, ?, ?, ?, ?)"
+	statement, err := db.PrepareContext(ctx, script)
+	if err != nil {
+		panic(err)
+	}
+	defer statement.Close()
+
+	for i := 0; i < 10; i++ {
+		name := "Burti" + strconv.Itoa(i)
+		email := "burti" + strconv.Itoa(i) + "@email"
+		balance := 100000
+		rating := 5.0
+		dob := "1999-9-9"
+		married := true
+
+		result, err := statement.ExecContext(ctx, name, email, balance, rating, dob, married)
+		if err != nil {
+			panic(err)
+		}
+
+		id, err := result.LastInsertId()
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println("Account id : ", id)
+	}
 }
